@@ -148,7 +148,7 @@ bool check_button_state() {
   return button_pressed;
 }
 
-const int MENU_CHOICES_COUNT_INT = 3;
+const int MENU_CHOICES_COUNT_INT = 4;
 unsigned long last_debounce_time_milliseconds = 0;
 unsigned long menu_opened_milliseconds = 0;
 bool lcd_display_updated = false;
@@ -170,7 +170,8 @@ void display_menu_items_on_lcd(bool BUTTON_PRESSED) {
   String MENU_OPTIONS[MENU_CHOICES_COUNT_INT] = {
     "1) Set Alarm Clk", 
     "2) Cancel Alarm Clk", 
-    "3) Start Pomodor"
+    "3) Start Pomodoro",
+    "4) Stop Pomodoro"
   };
 
   int scrolling_offset = 0;
