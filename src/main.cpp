@@ -14,26 +14,34 @@ NTPClient timeClient(ntpUDP);
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-const int BUTTON_LEFT = 35;
-const int BUTTON_RIGHT = 32;
-const int BUTTON_UP = 33;
-const int BUTTON_DOWN = 25;
-const int BUTTON_BACK = 23;
-const int BUTTON_SELECT = 27;
+const int BUTTON_LEFT_PIN = 35;
+const int BUTTON_RIGHT_PIN = 32;
+const int BUTTON_UP_PIN = 33;
+const int BUTTON_DOWN_PIN = 25;
+const int BUTTON_BACK_PIN = 23;
+const int BUTTON_SELECT_PIN = 27;
 const int NUMBER_OF_BUTTONS = 6;
 
-const int DEBOUNCE_DELAY = 50;
+const int BUTTON_LEFT = 0;
+const int BUTTON_RIGHT = 1;
+const int BUTTON_UP = 2;
+const int BUTTON_DOWN = 3;
+const int BUTTON_BACK = 4;
+const int BUTTON_SELECT = 5;
 
-const int BUTTON_GPIO_PIN[NUMBER_OF_BUTTONS] = {BUTTON_LEFT, BUTTON_RIGHT, BUTTON_UP, BUTTON_DOWN, BUTTON_BACK, BUTTON_SELECT};
+const int MENU_TIMEOUT_MILLISECONDS = 5000;
+const int DEBOUNCE_DELAY = 50;
+const int BUTTON_GPIO_PIN[NUMBER_OF_BUTTONS] = {BUTTON_LEFT_PIN, BUTTON_RIGHT_PIN, BUTTON_UP_PIN, BUTTON_DOWN_PIN, BUTTON_BACK_PIN, BUTTON_SELECT_PIN};
+
 int button_state[NUMBER_OF_BUTTONS] = {LOW,LOW,LOW,LOW,LOW,LOW};
 
 void init_gpio_buttons() {
-  pinMode(BUTTON_LEFT ,INPUT);
-  pinMode(BUTTON_RIGHT ,INPUT);
-  pinMode(BUTTON_UP ,INPUT);
-  pinMode(BUTTON_DOWN ,INPUT);
-  pinMode(BUTTON_BACK ,INPUT);
-  pinMode(BUTTON_SELECT ,INPUT);
+  pinMode(BUTTON_LEFT_PIN ,INPUT);
+  pinMode(BUTTON_RIGHT_PIN ,INPUT);
+  pinMode(BUTTON_UP_PIN ,INPUT);
+  pinMode(BUTTON_DOWN_PIN ,INPUT);
+  pinMode(BUTTON_BACK_PIN ,INPUT);
+  pinMode(BUTTON_SELECT_PIN ,INPUT);
 }
 
 void connect_to_wifi(){
@@ -140,23 +148,47 @@ bool check_button_state() {
   return button_pressed;
 }
 
-bool display_menu_open = false;
 unsigned long last_debounce_time_milliseconds = 0;
 unsigned long menu_opened_milliseconds = 0;
-bool menu_timer_started = false;
-int current_menu_selection = 0;
-const int MENU_TIMEOUT_MILLISECONDS = 5000;
 bool lcd_display_updated = false;
+bool menu_timer_started = false;
+bool display_menu_open = false;
+bool menu_cursor_updated = false;
+int current_menu_selection = 0;
+
+void DEBUGGING_serial_print_button_state() {
+  
+}
 
 // Displays menu to set alarms and change modes
 void display_menu(bool BUTTON_PRESSED) {
+  const int MENU_CHOICES = 2;
+
     if(!menu_timer_started || BUTTON_PRESSED) {
       menu_opened_milliseconds = millis();
       lcd_display_updated = false;
+      menu_cursor_updated = false;
       
       if(!menu_timer_started){
         lcd.clear();
       }
+
+      if(BUTTON_PRESSED && menu_timer_started && !menu_cursor_updated){
+        if(button_state[BUTTON_DOWN] == HIGH && current_menu_selection <= MENU_CHOICES - 1) {
+          current_menu_selection++;
+        }
+        if(button_state[BUTTON_UP] == HIGH && current_menu_selection > 0) {
+          current_menu_selection--;
+        }
+        
+        
+        Serial.println("BUTTON PUSHED");
+
+        DEBUGGING_serial_print_button_state();
+
+        menu_cursor_updated = true;
+      }
+
       menu_timer_started = true;
     }
 
@@ -166,11 +198,13 @@ void display_menu(bool BUTTON_PRESSED) {
       lcd.setCursor(0,1);
       lcd.print("2) Cancel Alarm Clk");
 
-      lcd.setCursor(2, current_menu_selection);
-      lcd.print(">");
-      lcd_display_updated = true;
+      if(!BUTTON_PRESSED) {
+        lcd.setCursor(2, current_menu_selection);
+        lcd.print(">");
+        lcd_display_updated = true;
+      }
     }
-    
+
     if(menu_opened_milliseconds + MENU_TIMEOUT_MILLISECONDS < millis()) {
       display_menu_open = false;
       menu_timer_started = false;
@@ -189,8 +223,6 @@ void loop() {
     display_menu_open = true;
     last_debounce_time_milliseconds = millis();
   }
-
-  Serial.println(last_debounce_time_milliseconds < millis());
 
   current_time = get_time_now();
   
