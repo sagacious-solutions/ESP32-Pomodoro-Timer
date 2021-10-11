@@ -144,12 +144,48 @@ bool display_menu_open = false;
 unsigned long last_debounce_time_milliseconds = 0;
 unsigned long menu_opened_milliseconds = 0;
 bool menu_timer_started = false;
+int current_menu_selection = 0;
 const int MENU_TIMEOUT_MILLISECONDS = 5000;
+bool lcd_display_updated = false;
+
+// Displays menu to set alarms and change modes
+void display_menu(bool BUTTON_PRESSED) {
+    if(!menu_timer_started || BUTTON_PRESSED) {
+      menu_opened_milliseconds = millis();
+      lcd_display_updated = false;
+      
+      if(!menu_timer_started){
+        lcd.clear();
+      }
+      menu_timer_started = true;
+    }
+
+    if(!lcd_display_updated){
+      lcd.setCursor(0,0);
+      lcd.print("1) Set Alarm Clk");
+      lcd.setCursor(0,1);
+      lcd.print("2) Cancel Alarm Clk");
+
+      lcd.setCursor(2, current_menu_selection);
+      lcd.print(">");
+      lcd_display_updated = true;
+    }
+    
+    if(menu_opened_milliseconds + MENU_TIMEOUT_MILLISECONDS < millis()) {
+      display_menu_open = false;
+      menu_timer_started = false;
+      menu_opened_milliseconds = 0;
+      current_menu_selection = 0;
+      lcd.clear();
+    }
+}
 
 void loop() {
   struct tm current_time;
 
-  if(check_button_state()) {
+  const bool BUTTON_PRESSED = check_button_state();
+
+  if(BUTTON_PRESSED) {
     display_menu_open = true;
     last_debounce_time_milliseconds = millis();
   }
@@ -165,20 +201,7 @@ void loop() {
   } 
 
   if(display_menu_open) {
-    if(!menu_timer_started) {
-      menu_opened_milliseconds = millis();
-      menu_timer_started = true;
-      lcd.clear();
-    }
-
-    lcd.setCursor(0,0);
-    lcd.print("1) Set Alarm Timer");
-
-    if(menu_opened_milliseconds + MENU_TIMEOUT_MILLISECONDS < millis()) {
-      display_menu_open = false;
-      menu_timer_started = false;
-      menu_opened_milliseconds = 0;
-    }
+    display_menu(BUTTON_PRESSED);
   }
 
   delay(10);
