@@ -2,7 +2,6 @@
 #include <LiquidCrystal_I2C.h>
 #include <time.h>
 
-
 // https://randomnerdtutorials.com/esp32-ntp-client-date-time-arduino-ide/
 #include <WiFi.h>
 #include <NTPClient.h>
@@ -13,19 +12,9 @@
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
 
-// Variables to save date and time
-String formattedDate;
-String dayStamp;
-String timeStamp;
-
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-void setup()
-{
-  Serial.begin(9600);
-  Serial.println("SERIAL INIT!!!!");
-  delay(1000);
-
+void connect_to_wifi(){
   Serial.println(WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
@@ -38,42 +27,92 @@ void setup()
   Serial.println("WiFi connected.");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+}
 
-  lcd.init();                      // initialize the lcd 
-  // Print a message to the LCD.
+void init_lcd(){
+  lcd.init();
 
   lcd.backlight();
   lcd.setCursor(0,0);
   lcd.print("Pomodoro Timer");
-  lcd.setCursor(0,1);
-  lcd.print("Here We Go!");
-  delay(5000);
+  delay(2000);
+  lcd.clear();
+}
+
+// setup time client for RTC
+void init_time_client(){
+  const int ONE_TIMEZONE_OFFSET = 3600;
+  const int MY_TIME_ZONE = -7;
+
+  // Initialize a NTPClient to get time
+  timeClient.begin();
+
+  // GMT -1 = -3600 / GMT +1 = 3600
+  timeClient.setTimeOffset(ONE_TIMEZONE_OFFSET * MY_TIME_ZONE);
+
+  while(!timeClient.update()) {
+    timeClient.forceUpdate();
+  }
 }
 
 
-void loop()
+void setup()
 {
-  time_t timer;
-  time(&timer);
+  Serial.begin(9600);
+  Serial.println("Initializing....");
 
-  struct tm y2k = {0};
-  struct tm pomodoro = {0};
+  connect_to_wifi();
 
-  double seconds;
+  init_lcd();
 
-  y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
-  y2k.tm_year = 100; y2k.tm_mon = 0; y2k.tm_mday = 1;
+  init_time_client();
 
-  seconds = difftime(timer,mktime(&y2k));
+  delay(5000);
 
+}
+
+// Prints out the passed time arguement to the LCD
+void lcd_display_formatted_time(tm time_to_print, int row, int column){
+  int hours = time_to_print.tm_hour;
+
+  if(hours >= 13) {
+    hours -= 12;
+  }
+
+  lcd.setCursor(column, row);
+
+  lcd.print(hours);
+  lcd.print(":");
+  if(time_to_print.tm_min < 10){
+    lcd.print("0");
+  }
+  lcd.print(time_to_print.tm_min);
+  lcd.print(":");
+  if(time_to_print.tm_sec < 10){
+    lcd.print("0");
+  }
+  lcd.print(time_to_print.tm_sec);
+}
+
+// Fetch raw epoch time from NTP Client and return it as localtime as tm
+tm get_time_now(){
+  struct tm current_time;
+
+  time_t rawTime = timeClient.getEpochTime();
+  current_time = *localtime(&rawTime);
+
+  return current_time;
+}
+
+void loop() {
+  struct tm current_time;
+
+  current_time = get_time_now();
+  
   lcd.setCursor(0,0);
-  lcd.print("January 1, 2000");
-  lcd.setCursor(0, 1);
-  lcd.print(seconds);
+  lcd.print("The time is...");
 
-  Serial.println(timer);
-  Serial.println(seconds);
-  Serial.println("Haha Same!");
+  lcd_display_formatted_time(current_time, 1, 0);
 
   delay(1000);
 }
