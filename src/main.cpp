@@ -20,7 +20,6 @@ const int BUTTON_UP_PIN = 33;
 const int BUTTON_DOWN_PIN = 25;
 const int BUTTON_BACK_PIN = 23;
 const int BUTTON_SELECT_PIN = 27;
-const int NUMBER_OF_BUTTONS = 6;
 
 const int BUTTON_LEFT = 0;
 const int BUTTON_RIGHT = 1;
@@ -28,6 +27,7 @@ const int BUTTON_UP = 2;
 const int BUTTON_DOWN = 3;
 const int BUTTON_BACK = 4;
 const int BUTTON_SELECT = 5;
+const int NUMBER_OF_BUTTONS = 6;
 
 const int MENU_TIMEOUT_MILLISECONDS = 5000;
 const int DEBOUNCE_DELAY = 50;
@@ -148,6 +148,7 @@ bool check_button_state() {
   return button_pressed;
 }
 
+const int MENU_CHOICES_COUNT_INT = 3;
 unsigned long last_debounce_time_milliseconds = 0;
 unsigned long menu_opened_milliseconds = 0;
 bool lcd_display_updated = false;
@@ -157,12 +158,45 @@ bool menu_cursor_updated = false;
 int current_menu_selection = 0;
 
 void DEBUGGING_serial_print_button_state() {
+  for(int i = 0; i < NUMBER_OF_BUTTONS; i++) {
+    Serial.print("Button : ");
+    Serial.print(i + 1);
+    Serial.print(button_state[i]);
+    Serial.println("");
+  }
+}
+
+void display_menu_items_on_lcd(bool BUTTON_PRESSED) {
+  String MENU_OPTIONS[MENU_CHOICES_COUNT_INT] = {
+    "1) Set Alarm Clk", 
+    "2) Cancel Alarm Clk", 
+    "3) Start Pomodor"
+  };
+
+  int scrolling_offset = 0;
+
+  if(current_menu_selection >= 2) {
+    scrolling_offset = current_menu_selection - 1;
+  }
+
+  lcd.setCursor(0,0);
+  lcd.print(MENU_OPTIONS[0 + scrolling_offset]);
+  lcd.setCursor(0,1);
+  lcd.print(MENU_OPTIONS[1 + scrolling_offset]);
   
+  if(!BUTTON_PRESSED) {
+    if(current_menu_selection == 0){
+      lcd.setCursor(2, 0);
+    } else {
+      lcd.setCursor(2, 1);
+    }
+    lcd.print(">");
+    lcd_display_updated = true;
+  }
 }
 
 // Displays menu to set alarms and change modes
 void display_menu(bool BUTTON_PRESSED) {
-  const int MENU_CHOICES = 2;
 
     if(!menu_timer_started || BUTTON_PRESSED) {
       menu_opened_milliseconds = millis();
@@ -174,17 +208,18 @@ void display_menu(bool BUTTON_PRESSED) {
       }
 
       if(BUTTON_PRESSED && menu_timer_started && !menu_cursor_updated){
-        if(button_state[BUTTON_DOWN] == HIGH && current_menu_selection <= MENU_CHOICES - 1) {
+        Serial.print("Current Menu Selection is");        
+        Serial.print(current_menu_selection);
+        Serial.println("");
+
+        if(button_state[BUTTON_DOWN] == HIGH && current_menu_selection < MENU_CHOICES_COUNT_INT - 1) {
           current_menu_selection++;
         }
         if(button_state[BUTTON_UP] == HIGH && current_menu_selection > 0) {
           current_menu_selection--;
-        }
-        
-        
-        Serial.println("BUTTON PUSHED");
+        }        
 
-        DEBUGGING_serial_print_button_state();
+        // DEBUGGING_serial_print_button_state();
 
         menu_cursor_updated = true;
       }
@@ -193,16 +228,7 @@ void display_menu(bool BUTTON_PRESSED) {
     }
 
     if(!lcd_display_updated){
-      lcd.setCursor(0,0);
-      lcd.print("1) Set Alarm Clk");
-      lcd.setCursor(0,1);
-      lcd.print("2) Cancel Alarm Clk");
-
-      if(!BUTTON_PRESSED) {
-        lcd.setCursor(2, current_menu_selection);
-        lcd.print(">");
-        lcd_display_updated = true;
-      }
+      display_menu_items_on_lcd(BUTTON_PRESSED);
     }
 
     if(menu_opened_milliseconds + MENU_TIMEOUT_MILLISECONDS < millis()) {
