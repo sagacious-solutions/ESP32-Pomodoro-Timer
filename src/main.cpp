@@ -14,6 +14,18 @@ NTPClient timeClient(ntpUDP);
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
+const int BUTTON_LEFT = 35;
+const int BUTTON_RIGHT = 32;
+const int BUTTON_UP = 33;
+const int BUTTON_DOWN = 25;
+const int BUTTON_BACK = 23;
+const int BUTTON_SELECT = 27;
+
+void init_gpio_buttons() {
+  pinMode(BUTTON_LEFT ,INPUT);
+}
+
+
 void connect_to_wifi(){
   Serial.println(WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -56,10 +68,13 @@ void init_time_client(){
 }
 
 
+
 void setup()
 {
   Serial.begin(9600);
   Serial.println("Initializing....");
+
+  init_gpio_buttons();
 
   connect_to_wifi();
 
