@@ -140,26 +140,46 @@ bool check_button_state() {
   return button_pressed;
 }
 
-bool display_menu = false;
-unsigned long lastDebounceTime = 0;
+bool display_menu_open = false;
+unsigned long last_debounce_time_milliseconds = 0;
+unsigned long menu_opened_milliseconds = 0;
+bool menu_timer_started = false;
+const int MENU_TIMEOUT_MILLISECONDS = 5000;
 
 void loop() {
   struct tm current_time;
 
   if(check_button_state()) {
-    display_menu = true;
-    lastDebounceTime = millis();
+    display_menu_open = true;
+    last_debounce_time_milliseconds = millis();
   }
 
-  Serial.println(lastDebounceTime < millis());
+  Serial.println(last_debounce_time_milliseconds < millis());
 
   current_time = get_time_now();
   
-  if(!display_menu){
+  if(!display_menu_open){
     lcd.setCursor(0,0);
     lcd.print("The time is...");
     lcd_display_formatted_time(current_time, 1, 0);
   } 
+
+  if(display_menu_open) {
+    if(!menu_timer_started) {
+      menu_opened_milliseconds = millis();
+      menu_timer_started = true;
+      lcd.clear();
+    }
+
+    lcd.setCursor(0,0);
+    lcd.print("1) Set Alarm Timer");
+
+    if(menu_opened_milliseconds + MENU_TIMEOUT_MILLISECONDS < millis()) {
+      display_menu_open = false;
+      menu_timer_started = false;
+      menu_opened_milliseconds = 0;
+    }
+  }
 
   delay(10);
 }
