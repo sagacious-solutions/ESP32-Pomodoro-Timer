@@ -14,6 +14,28 @@ NTPClient timeClient(ntpUDP);
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
+const int BUTTON_LEFT = 35;
+const int BUTTON_RIGHT = 32;
+const int BUTTON_UP = 33;
+const int BUTTON_DOWN = 25;
+const int BUTTON_BACK = 23;
+const int BUTTON_SELECT = 27;
+const int NUMBER_OF_BUTTONS = 6;
+
+const int DEBOUNCE_DELAY = 50;
+
+const int BUTTON_GPIO_PIN[NUMBER_OF_BUTTONS] = {BUTTON_LEFT, BUTTON_RIGHT, BUTTON_UP, BUTTON_DOWN, BUTTON_BACK, BUTTON_SELECT};
+int button_state[NUMBER_OF_BUTTONS] = {LOW,LOW,LOW,LOW,LOW,LOW};
+
+void init_gpio_buttons() {
+  pinMode(BUTTON_LEFT ,INPUT);
+  pinMode(BUTTON_RIGHT ,INPUT);
+  pinMode(BUTTON_UP ,INPUT);
+  pinMode(BUTTON_DOWN ,INPUT);
+  pinMode(BUTTON_BACK ,INPUT);
+  pinMode(BUTTON_SELECT ,INPUT);
+}
+
 void connect_to_wifi(){
   Serial.println(WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -56,19 +78,19 @@ void init_time_client(){
 }
 
 
+
 void setup()
 {
   Serial.begin(9600);
   Serial.println("Initializing....");
+
+  init_gpio_buttons();
 
   connect_to_wifi();
 
   init_lcd();
 
   init_time_client();
-
-  delay(5000);
-
 }
 
 // Prints out the passed time arguement to the LCD
@@ -104,15 +126,40 @@ tm get_time_now(){
   return current_time;
 }
 
+bool check_button_state() {
+  bool button_pressed = false;
+
+  for(int i = 0; i <= 5; i++){
+    button_state[i] = digitalRead(BUTTON_GPIO_PIN[i]); 
+
+    if (button_state[i]) {
+      button_pressed = true;
+    }
+  }
+
+  return button_pressed;
+}
+
+bool display_menu = false;
+unsigned long lastDebounceTime = 0;
+
 void loop() {
   struct tm current_time;
 
+  if(check_button_state()) {
+    display_menu = true;
+    lastDebounceTime = millis();
+  }
+
+  Serial.println(lastDebounceTime < millis());
+
   current_time = get_time_now();
   
-  lcd.setCursor(0,0);
-  lcd.print("The time is...");
+  if(!display_menu){
+    lcd.setCursor(0,0);
+    lcd.print("The time is...");
+    lcd_display_formatted_time(current_time, 1, 0);
+  } 
 
-  lcd_display_formatted_time(current_time, 1, 0);
-
-  delay(1000);
+  delay(10);
 }

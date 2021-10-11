@@ -6,6 +6,10 @@ This is a simple desktop ESP32 Pomodoro Timer.
 
 <img src="./documentation/pinout.jpg">
 
+<h3>Prototype</h3>
+
+<img src="./documentation/prototype.jpg">
+
 <h5>Secrets</h5>
 
 You will need to create "wifi_secrets.h" in "./src" with the following format to connect to Wifi and get the current time.
