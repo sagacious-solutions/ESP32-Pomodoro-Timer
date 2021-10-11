@@ -77,7 +77,6 @@ void lcd_display_formatted_time(tm time_to_print, int row, int column){
 
   if(hours >= 13) {
     hours -= 12;
-
   }
 
   lcd.setCursor(column, row);
@@ -107,17 +106,9 @@ tm get_time_now(){
 
 void loop() {
   struct tm current_time;
-  struct tm * tm_ptr;
-
-  tm_ptr = &current_time;
-  
-
 
   current_time = get_time_now();
-
-  Serial.println(asctime(tm_ptr));
-
-
+  
   lcd.setCursor(0,0);
   lcd.print("The time is...");
 
